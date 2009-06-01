@@ -1,0 +1,15 @@
+Port of Wave Robot Python Client to Ruby.
+<http://code.google.com/p/wave-robot-python-client/>
+
+Status:
+
+* Not tested with any server.
+
+* Unit tests pass.
+
+* samples, robot.rb and __init__.rb not yet ported from Python to Ruby.
+
+* APIs need a complete and thorough scrubbing.  In particular, they look like
+    they were designed for Java, hastily ported to Python, and then even more
+    hastily ported to Ruby; the last step done by someone who was clueless
+    as to what was intended to be accomplished.
