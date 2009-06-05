@@ -88,7 +88,7 @@ class AbstractRobot
   
   def add_handler(capability)
     @_handlers.push capability
-	  
+  end	  
   def run_command(command)
     unless allowed_commands.member? command.to_s
 	  return command << " is not one of the allowed commands: " << allowed_commands.to_s
