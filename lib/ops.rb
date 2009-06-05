@@ -14,7 +14,7 @@ __author__ = 'davidbyttow@google.com (David Byttow)'
 require 'document'
 require 'model'
 require 'util'
-
+ 
 # Operation Types
 WAVELET_APPEND_BLIP = 'WAVELET_APPEND_BLIP'
 WAVELET_ADD_PARTICIPANT = 'WAVELET_ADD_PARTICIPANT'

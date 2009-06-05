@@ -1,20 +1,13 @@
-#!/usr/bin/python2.4
-#
-# Copyright 2009 Google Inc. All Rights Reserved.
-
-"""Defines the App Engine-specific robot class and associated handlers."""
-
-__author__ = 'davidbyttow@google.com (David Byttow)'
-
-
-import logging
-import traceback
-
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp.util import run_wsgi_app
-
-import robot_abstract
-
+require 'abstract_robot'
+class Robot < AbstractRobot
+  def allowed_commands
+    ["name"]
+  end
+  def name
+    @name
+  end
+end
+=begin
 
 class RobotCapabilitiesHandler(webapp.RequestHandler):
   """Handler for serving capabilities.xml given a robot."""
@@ -85,37 +78,4 @@ class RobotEventHandler(webapp.RequestHandler):
     logging.info('Outgoing: ' + json_response)
     self.response.headers['Content-Type'] = 'application/json'
     self.response.out.write(json_response)
-
-
-class Robot(robot_abstract.Robot):
-  """Adds an AppEngine setup method to the base robot class.
-
-  A robot is typically setup in the following steps:
-    1. Instantiate and define robot.
-    2. Register various handlers that it is interested in.
-    3. Call Run, which will setup the handlers for the app.
-
-  For example:
-    robot = Robot('Terminator',
-                  image_url='http://www.sky.net/models/t800.png',
-                  profile_url='http://www.sky.net/models/t800.html')
-    robot.RegisterHandler(WAVELET_PARTICIPANTS_CHANGED, KillParticipant)
-    robot.Run()
-  """
-
-  def Run(self, debug=False):
-    """Sets up the webapp handlers for this robot and starts listening.
-
-    Args:
-      debug: Optional variable that defaults to False and is passed through
-          to the webapp application to determine if it should show debug info.
-    """
-    # App Engine expects to construct a class with no arguments, so we
-    # pass a lambda that constructs the appropriate handler with
-    # arguments from the enclosing scope.
-    app = webapp.WSGIApplication([
-        ('/_wave/capabilities.xml', lambda: RobotCapabilitiesHandler(self)),
-        ('/_wave/robot/profile', lambda: RobotProfileHandler(self)),
-        ('/_wave/robot/jsonrpc', lambda: RobotEventHandler(self)),
-    ], debug=debug)
-    run_wsgi_app(app)
+=end

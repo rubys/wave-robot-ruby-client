@@ -16,25 +16,6 @@ require 'rubygems'
 require 'json'
 require 'util'
 
-module RobotAbstract
-  def self.ParseJSONBody(json_body)
-    """Parse a JSON string and return a context and an event list."""
-    json = JSON.parse(json_body)
-    # TODO(davidbyttow): Remove this once no longer needed.
-    data = Util.CollapseJavaCollections(json)
-    context = CreateContext(data)
-    events = data['events'].map {|event_data| Model.CreateEvent(event_data)}
-    return context, events
-  end
-
-
-  def self.SerializeContext(context)
-    """Return a JSON string representing the given context."""
-    context_dict = Util.Serialize(context)
-    return JSON.dump(context_dict)
-  end
-end
-
 class RobotListener
   """Listener interface for robot events.
 
@@ -80,7 +61,7 @@ class RobotListener
   end
 end
 
-class Robot
+class AbstractRobot
   """Robot metadata class.
 
   This class holds on to basic robot information like the name and profile.
@@ -90,77 +71,76 @@ class Robot
 
   def initialize(name, image_url='', profile_url='')
     """Initializes self with robot information."""
-    @_handlers = {}
+    @_handlers = []
     @name = name
     @image_url = image_url
     @profile_url = profile_url
     @cron_jobs = []
   end
-
-  def RegisterHandler(event_type, handler)
-    """Registers a handler on a specific event type.
-
-    Multiple handlers may be registered on a single event type and are
-    guaranteed to be called in order.
-
-    The handler takes two arguments, the event properties and the Context of
-    this session. For example:
-
-    def OnParticipantsChanged(properties, context)
-      pass
-
-    Args:
-      event_type: An event type to listen for.
-      handler: A function handler which takes two arguments, event properties
-          and the Context of this session.
-    """
-    (@_handlers[event_type] ||= []).push(handler)
+  
+  def self.from_yml(filename)
+    conf = YAML.load(File.new('robot.yml'))
+	robot = Robot.new(conf['name'], conf['image_url'], conf['profile_url'])
+	(conf['capabilities'] || {}).each_key {|capability| robot.add_handler capability}
+	(conf['crons'] || {}).each {|path, seconds| robot.register_cron_job(path, seconds)}
+	robot
+  end
+  
+  def add_handler(capability)
+    @_handlers.push capability
+  end
+  
+  def run_command(command)
+    unless allowed_commands.member? command.to_s
+	  return command << " is not one of the allowed commands: " << allowed_commands.to_s
+	end
+	send(command)
   end
 
-  def RegisterCronJob(path, seconds)
+  def allowed_commands
+    []
+  end  
+
+  def register_cron_job(path, seconds)
     """Registers a cron job to surface in capabilities.xml."""
     @cron_jobs.push([path, seconds])
   end
 
   def HandleEvent(event, context)
-    """Calls all of the handlers associated with an event."""
-    for handler in @_handlers.get(event.type, [])
-      # TODO(jacobly): pass the event in to the handlers directly
-      # instead of passing the properties dictionary.
-      handler(event.properties, context)
-    end
+    send(event.type, event.properties, context)
   end
 
-  def GetCapabilitiesXml()
+  def capabilities()
     """Return this robot's capabilities as an XML string."""
     lines = ['<w:capabilities>']
-    for capability in @_handlers:
-      lines.push('  <w:capability name="%s"/>' % capability)
+    @_handlers.each do |capability|
+      lines.push  '<w:capability name="'<< capability << '"/>'
     end
     lines.push('</w:capabilities>')
 
-    if @cron_jobs and !@cron_jobs.empty?:
+    if @cron_jobs and !@cron_jobs.empty?
       lines.push('<w:crons>')
-      for job in @cron_jobs:
-        lines.push('  <w:cron path="%s" timerinseconds="%s"/>' % job)
+      @cron_jobs.each do |job|
+        lines.push  '<w:cron path="' << job[0] << '" timerinseconds="' << job[1].to_s << '"/>'
       end
       lines.push('</w:crons>')
     end
 
-    robot_attrs = ' name="%s"' % @name
-    if @image_url and !@image_url.empty?:
-      robot_attrs += ' imageurl="%s"' % @image_url
+    robot_attrs = ' name="' << @name <<'"'
+    if @image_url and !@image_url.empty?
+      robot_attrs += ' imageurl="'<< @image_url <<'"'
     end
-    if @profile_url and !@profile_url.empty?:
-      robot_attrs += ' profileurl="%s"' % @profile_url
+    if @profile_url and !@profile_url.empty?
+      robot_attrs += ' profileurl="' << @profile_url << '"'
     end
-    lines.push('<w:profile%s/>' % robot_attrs)
-    return ("<?xml version=\"1.0\"?>\n" +
-            "<w:robot xmlns:w=\"http://wave.google.com/extensions/robots/1.0\">\n" +
-            "%s\n</w:robot>\n") % (lines.join("\n"))
+    lines.push '<w:profile '<< robot_attrs << ' />'
+		return "<?xml version=\"1.0\"?>\n" <<
+            "<w:robot xmlns:w=\"http://wave.google.com/extensions/robots/1.0\">\n" <<
+			lines.join("\n")			
+            "\n</w:robot>\n"
   end
 
-  def GetProfileJson()
+  def profile()
     """Returns JSON body for any profile handler.
 
     Returns:
@@ -172,6 +152,22 @@ class Robot
     data['profileUrl'] = @profile_url
     # TODO(davidbyttow): Remove this java nonsense.
     data['javaClass'] = 'com.google.wave.api.ParticipantProfile'
-    return simplejson.dumps(data)
+    return data.to_json
   end
+  def self.ParseJSONBody(json_body)
+    """Parse a JSON string and return a context and an event list."""
+    json = JSON.parse(json_body)
+    # TODO(davidbyttow): Remove this once no longer needed.
+    data = Util.CollapseJavaCollections(json)
+    context = CreateContext(data)
+    events = data['events'].map {|event_data| Model.CreateEvent(event_data)}
+    return context, events
+  end
+
+
+  def self.SerializeContext(context)
+    """Return a JSON string representing the given context."""
+    context_dict = Util.Serialize(context)
+    return JSON.dump(context_dict)
+  end  
 end
