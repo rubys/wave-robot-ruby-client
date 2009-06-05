@@ -113,14 +113,14 @@ class AbstractRobot
     """Return this robot's capabilities as an XML string."""
     lines = ['<w:capabilities>']
     @_handlers.each do |capability|
-      lines.push  '<w:capability name="'<< capability << '"/>'
+      lines.push  '  <w:capability name="'<< capability << '"/>'
     end
     lines.push('</w:capabilities>')
 
     if @cron_jobs and !@cron_jobs.empty?
       lines.push('<w:crons>')
       @cron_jobs.each do |job|
-        lines.push  '<w:cron path="' << job[0] << '" timerinseconds="' << job[1].to_s << '"/>'
+        lines.push  '  <w:cron path="/_wave/robot/' << job[0] << '" timerinseconds="' << job[1].to_s << '"/>'
       end
       lines.push('</w:crons>')
     end
@@ -135,7 +135,7 @@ class AbstractRobot
     lines.push '<w:profile '<< robot_attrs << ' />'
 		return "<?xml version=\"1.0\"?>\n" <<
             "<w:robot xmlns:w=\"http://wave.google.com/extensions/robots/1.0\">\n" <<
-			lines.join("\n")			
+			lines.join("\n")	<<		
             "\n</w:robot>\n"
   end
 
