@@ -16,7 +16,7 @@ require 'rubygems'
 require 'json'
 require 'util'
 
-module RobotAbstract
+class AbstractRobot
   def self.ParseJSONBody(json_body)
     """Parse a JSON string and return a context and an event list."""
     json = JSON.parse(json_body)
@@ -80,7 +80,7 @@ class RobotListener
   end
 end
 
-class Robot
+class Robot < AbstractRobot
   """Robot metadata class.
 
   This class holds on to basic robot information like the name and profile.
@@ -96,6 +96,10 @@ class Robot
     @profile_url = profile_url
     @cron_jobs = []
   end
+  
+  def run_command(command)
+    "I try to run command " << command
+  end  
 
   def RegisterHandler(event_type, handler)
     """Registers a handler on a specific event type.
@@ -131,36 +135,37 @@ class Robot
     end
   end
 
-  def GetCapabilitiesXml()
+  def capabilities()
     """Return this robot's capabilities as an XML string."""
     lines = ['<w:capabilities>']
-    for capability in @_handlers:
-      lines.push('  <w:capability name="%s"/>' % capability)
+    @_handlers.each do |capability|
+      lines.push  '<w:capability name="'<< capability << '"/>'
     end
     lines.push('</w:capabilities>')
 
-    if @cron_jobs and !@cron_jobs.empty?:
+    if @cron_jobs and !@cron_jobs.empty?
       lines.push('<w:crons>')
-      for job in @cron_jobs:
-        lines.push('  <w:cron path="%s" timerinseconds="%s"/>' % job)
+      @cron_jobs.each do |cron_job|
+        lines.push  '<w:cron path= "' << job[0] << ' timerinseconds="' << job[1] << '"/>'
       end
       lines.push('</w:crons>')
     end
 
-    robot_attrs = ' name="%s"' % @name
-    if @image_url and !@image_url.empty?:
-      robot_attrs += ' imageurl="%s"' % @image_url
+    robot_attrs = ' name="' << @name <<'"'
+    if @image_url and !@image_url.empty?
+      robot_attrs += ' imageurl="'<< @image_url <<'"'
     end
-    if @profile_url and !@profile_url.empty?:
-      robot_attrs += ' profileurl="%s"' % @profile_url
+    if @profile_url and !@profile_url.empty?
+      robot_attrs += ' profileurl="' << @profile_url << '"'
     end
-    lines.push('<w:profile%s/>' % robot_attrs)
-    return ("<?xml version=\"1.0\"?>\n" +
-            "<w:robot xmlns:w=\"http://wave.google.com/extensions/robots/1.0\">\n" +
-            "%s\n</w:robot>\n") % (lines.join("\n"))
+    lines.push '<w:profile '<< robot_attrs << ' />'
+		return "<?xml version=\"1.0\"?>\n" <<
+            "<w:robot xmlns:w=\"http://wave.google.com/extensions/robots/1.0\">\n" <<
+			lines.join("\n")			
+            "\n</w:robot>\n"
   end
 
-  def GetProfileJson()
+  def profile()
     """Returns JSON body for any profile handler.
 
     Returns:
@@ -172,6 +177,6 @@ class Robot
     data['profileUrl'] = @profile_url
     # TODO(davidbyttow): Remove this java nonsense.
     data['javaClass'] = 'com.google.wave.api.ParticipantProfile'
-    return simplejson.dumps(data)
+    return data.to_json
   end
 end

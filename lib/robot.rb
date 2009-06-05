@@ -1,20 +1,5 @@
-#!/usr/bin/python2.4
-#
-# Copyright 2009 Google Inc. All Rights Reserved.
-
-"""Defines the App Engine-specific robot class and associated handlers."""
-
-__author__ = 'davidbyttow@google.com (David Byttow)'
-
-
-import logging
-import traceback
-
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp.util import run_wsgi_app
-
-import robot_abstract
-
+require 'abstract_robot'
+=begin
 
 class RobotCapabilitiesHandler(webapp.RequestHandler):
   """Handler for serving capabilities.xml given a robot."""
@@ -86,8 +71,7 @@ class RobotEventHandler(webapp.RequestHandler):
     self.response.headers['Content-Type'] = 'application/json'
     self.response.out.write(json_response)
 
-
-class Robot(robot_abstract.Robot):
+class Robot < AbstractRobot
   """Adds an AppEngine setup method to the base robot class.
 
   A robot is typically setup in the following steps:
@@ -102,20 +86,8 @@ class Robot(robot_abstract.Robot):
     robot.RegisterHandler(WAVELET_PARTICIPANTS_CHANGED, KillParticipant)
     robot.Run()
   """
-
-  def Run(self, debug=False):
-    """Sets up the webapp handlers for this robot and starts listening.
-
-    Args:
-      debug: Optional variable that defaults to False and is passed through
-          to the webapp application to determine if it should show debug info.
-    """
-    # App Engine expects to construct a class with no arguments, so we
-    # pass a lambda that constructs the appropriate handler with
-    # arguments from the enclosing scope.
-    app = webapp.WSGIApplication([
-        ('/_wave/capabilities.xml', lambda: RobotCapabilitiesHandler(self)),
-        ('/_wave/robot/profile', lambda: RobotProfileHandler(self)),
-        ('/_wave/robot/jsonrpc', lambda: RobotEventHandler(self)),
-    ], debug=debug)
-    run_wsgi_app(app)
+  def run_command(command)
+    "I try to run command " << command
+  end
+end
+=end
