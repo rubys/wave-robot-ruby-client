@@ -76,6 +76,7 @@ class AbstractRobot
     @image_url = image_url
     @profile_url = profile_url
     @cron_jobs = []
+	@allowed_commands = []
   end
   
   def self.from_yml(filename)
@@ -89,20 +90,18 @@ class AbstractRobot
   def add_handler(capability)
     @_handlers.push capability
   end	  
-  def run_command(command)
-    unless allowed_commands.member? command.to_s
+  def run_command(command, params = nil)
+    unless (@allowed_commands + extra_commands).member? command.to_s
 	  return command << " is not one of the allowed commands: " << allowed_commands.to_s
 	end
-	send(command)
+	send(command, params)
   end
-
-  def allowed_commands
-    []
-  end  
+  
 
   def register_cron_job(path, seconds)
     """Registers a cron job to surface in capabilities.xml."""
     @cron_jobs.push([path, seconds])
+	@allowed_commands.push(path.gsub("_wave/robot/", ""))
   end
 
   def HandleEvent(event, context)
