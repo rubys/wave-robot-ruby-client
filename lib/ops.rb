@@ -576,13 +576,13 @@ def CreateContext(data)
     A Context instance for this session.
   """
   context = ContextImpl_.new()
-  for raw_blip_data in data['blips'].values()
+  for raw_blip_data in data.getJSONArray('blips')
     blip_data = Model.CreateBlipData(raw_blip_data)
     context.AddBlip(blip_data)
   end
 
   # Currently only one wavelet is sent.
-  wavelet_data = Model.CreateWaveletData(data['wavelet'])
+  wavelet_data = Model.CreateWaveletData(data.getJSONObject('wavelet'))
   context.AddWavelet(wavelet_data)
 
   # Waves are not sent over the wire, but we can build the list based on the

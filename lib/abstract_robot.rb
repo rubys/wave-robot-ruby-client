@@ -13,8 +13,9 @@ __author__ = 'davidbyttow@google.com (David Byttow)'
 require 'model'
 require 'ops'
 require 'rubygems'
-require 'json'
 require 'util'
+require 'lib/json'
+import org.json.JSONObject
 
 class RobotListener
   """Listener interface for robot events.
@@ -154,7 +155,7 @@ class AbstractRobot
   end
   def self.ParseJSONBody(json_body)
     """Parse a JSON string and return a context and an event list."""
-    json = JSON.parse(json_body)
+    json = JSONObject.new(json_body)
     # TODO(davidbyttow): Remove this once no longer needed.
     data = Util.CollapseJavaCollections(json)
     context = CreateContext(data)
