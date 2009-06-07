@@ -51,28 +51,8 @@ class TestHelpers < Test::Unit::TestCase
     blip.GetDocument().SetText('Hello, wave!')
     serialized = AbstractRobot.serialize_context(context)
         # '"javaClass": "java.util.ArrayList"
-    assert_equal(
-        '{"operations":{' +
-          '"list":[' +
-            '{' +
-              '"waveId":"wdykLROk*11",' +
-              '"property":{"javaClass":"com.google.wave.api.Range","end":1,"start":0},' +
-              '"blipId":"wdykLROk*13",' +
-              '"javaClass":"com.google.wave.api.impl.OperationImpl",' +
-              '"type":"DOCUMENT_DELETE",' +
-              '"index":-1,' + 
-              '"waveletId":"conv+root"},' +
-            '{' +
-              '"waveId":"wdykLROk*11",' +
-              '"property":"Hello, wave!",' +
-              '"blipId":"wdykLROk*13",' +
-              '"javaClass":"com.google.wave.api.impl.OperationImpl",' +
-              '"type":"DOCUMENT_INSERT",' +
-              '"index":0,' +
-              '"waveletId":"conv+root"}],' +
-          '"javaClass":"java.util.ArrayList"},' + #!!!
-        '"javaClass":"com.google.wave.api.impl.OperationMessageBundle"}',
-        serialized)
+    expected = '{"operations": {"javaClass": "java.util.ArrayList", "list": [{"blipId": "wdykLROk*13", "index": -1, "waveletId": "conv+root", "javaClass": "com.google.wave.api.impl.OperationImpl", "waveId": "wdykLROk*11", "property": {"javaClass": "com.google.wave.api.Range", "end": 1, "start": 0}, "type": "DOCUMENT_DELETE"},{"blipId": "wdykLROk*13", "index": 0, "waveletId": "conv+root", "javaClass": "com.google.wave.api.impl.OperationImpl", "waveId": "wdykLROk*11", "property": "Hello, wave!", "type": "DOCUMENT_INSERT"}]}, "javaClass": "com.google.wave.api.impl.OperationMessageBundle"}'
+    assert_equal(JSON(expected), JSON(serialized))
   end
 end
 
