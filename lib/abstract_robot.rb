@@ -14,8 +14,7 @@ require 'model'
 require 'ops'
 require 'rubygems'
 require 'util'
-require 'lib/json'
-import org.json.JSONObject
+require 'json'
 
 class RobotListener
   """Listener interface for robot events.
@@ -106,7 +105,7 @@ class AbstractRobot
     data = AbstractRobot.parse_json(json)
 	context = data[0]
 	event = data[1].first
-	send(command, events, context)
+	send(command, event, context)
 	return context
   end
   
@@ -140,7 +139,7 @@ class AbstractRobot
     if @profile_url and !@profile_url.empty?
       robot_attrs += ' profileurl="' << @profile_url << '"'
     end
-    lines.push '<w:profile '<< robot_attrs << ' />'
+    lines.push '<w:profile'<< robot_attrs << '/>'
 		return "<?xml version=\"1.0\"?>\n" <<
             "<w:robot xmlns:w=\"http://wave.google.com/extensions/robots/1.0\">\n" <<
 			lines.join("\n")	<<		

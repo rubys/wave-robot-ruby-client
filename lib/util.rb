@@ -140,6 +140,17 @@ module Util
       # Looks okay, serialize it.
 	  data[key_writer.call(attr_name)] = Serialize(attr)
     end
+	
+    for attr_name in obj.instance_variables
+      next if attr_name =~ /^[_A-Z]/ # naming conventions
+      next if Object.respond_to?(attr_name)
+      attr = obj.instance_variable_get(attr_name)
+      next if attr == obj
+
+      # Looks okay, serialize it.
+	  data[key_writer.call(attr_name.gsub('@',''))] = Serialize(attr)
+    end	
+	
     data['type']=Serialize(obj.type) if obj.respond_to?(:type=)
     if obj.class.constants.include? "JAVA_CLASS"
       data['javaClass']=obj.class.const_get(:JAVA_CLASS)

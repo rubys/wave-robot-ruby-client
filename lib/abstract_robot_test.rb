@@ -8,7 +8,7 @@ __author__ = 'jacobly@google.com (Jacob Lee)'
 
 require 'test/unit'
 
-require 'robot_abstract'
+require 'abstract_robot'
 
 DEBUG_DATA = '{"blips":{"map":{"wdykLROk*13":{"lastModifiedTime":1242079608457,"contributors":{"javaClass":"java.util.ArrayList","list":["davidbyttow@google.com"]},"waveletId":"conv+root","waveId":"wdykLROk*11","parentBlipId":null,"version":3,"creator":"davidbyttow@google.com","content":"\n","blipId":"wdykLROk*13","javaClass":"com.google.wave.api.impl.BlipData","annotations":{"javaClass":"java.util.ArrayList","list":[{"range":{"start":0,"javaClass":"com.google.wave.api.Range","end":1},"name":"user/e/davidbyttow@google.com","value":"David","javaClass":"com.google.wave.api.Annotation"}]},"elements":{"map":{},"javaClass":"java.util.HashMap"},"childBlipIds":{"javaClass":"java.util.ArrayList","list":[]}}},"javaClass":"java.util.HashMap"},"events":{"javaClass":"java.util.ArrayList","list":[{"timestamp":1242079611003,"modifiedBy":"davidbyttow@google.com","javaClass":"com.google.wave.api.impl.EventData","properties":{"map":{"participantsRemoved":{"javaClass":"java.util.ArrayList","list":[]},"participantsAdded":{"javaClass":"java.util.ArrayList","list":["monty@appspot.com"]}},"javaClass":"java.util.HashMap"},"type":"WAVELET_PARTICIPANTS_CHANGED"}]},"wavelet":{"lastModifiedTime":1242079611003,"title":"","waveletId":"conv+root","rootBlipId":"wdykLROk*13","javaClass":"com.google.wave.api.impl.WaveletData","dataDocuments":null,"creationTime":1242079608457,"waveId":"wdykLROk*11","participants":{"javaClass":"java.util.ArrayList","list":["davidbyttow@google.com","monty@appspot.com"]},"creator":"davidbyttow@google.com","version":5}}'
 
@@ -16,8 +16,8 @@ DEBUG_DATA = '{"blips":{"map":{"wdykLROk*13":{"lastModifiedTime":1242079608457,"
 class TestHelpers < Test::Unit::TestCase
   """Tests for the web helper functions in abstract_robot."""
 
-  def testParseJSONBody()
-    context, events = RobotAbstract.ParseJSONBody(DEBUG_DATA)
+  def testparse_json()
+    context, events = AbstractRobot.parse_json(JSON(DEBUG_DATA))
 
     # Test some basic properties; the rest should be covered by
     # ops.CreateContext.
@@ -36,8 +36,8 @@ class TestHelpers < Test::Unit::TestCase
   end
 
   def testSerializeContextSansOps()
-    context, _ = RobotAbstract.ParseJSONBody(DEBUG_DATA)
-    serialized = RobotAbstract.SerializeContext(context)
+    context, _ = AbstractRobot.parse_json(JSON(DEBUG_DATA))
+    serialized = AbstractRobot.serialize_context(context)
     assert_equal(
         '{"operations":{"list":[],"javaClass":"java.util.ArrayList"},' +
         '"javaClass":"com.google.wave.api.impl.OperationMessageBundle"}',
@@ -45,11 +45,11 @@ class TestHelpers < Test::Unit::TestCase
   end
 
   def testSerializeContextWithOps()
-    context, _ = RobotAbstract.ParseJSONBody(DEBUG_DATA)
+    context, _ = AbstractRobot.parse_json(JSON(DEBUG_DATA))
     wavelet = context.GetWavelets()[0]
     blip = context.GetBlipById(wavelet.GetRootBlipId())
     blip.GetDocument().SetText('Hello, wave!')
-    serialized = RobotAbstract.SerializeContext(context)
+    serialized = AbstractRobot.serialize_context(context)
         # '"javaClass": "java.util.ArrayList"
     assert_equal(
         '{"operations":{' +
@@ -80,7 +80,7 @@ end
 class TestGetCapabilitiesXml < Test::Unit::TestCase
 
   def setup()
-    @robot = Robot.new('Testy')
+    @robot = AbstractRobot.new('Testy')
   end
 
   def assertStringsEqual(s1, s2)
@@ -94,12 +94,12 @@ class TestGetCapabilitiesXml < Test::Unit::TestCase
         "<w:capabilities>\n</w:capabilities>\n" +
         "<w:profile name=\"Testy\"/>\n" +
         "</w:robot>\n")
-    xml = @robot.GetCapabilitiesXml()
+    xml = @robot.capabilities()
     self.assertStringsEqual(expected, xml)
   end
 
   def testUrls()
-    profile_robot = Robot.new(
+    profile_robot = AbstractRobot.new(
         'Testy', image_url='http://example.com/image.png',
         profile_url='http://example.com/profile.xml')
     expected = (
@@ -110,23 +110,23 @@ class TestGetCapabilitiesXml < Test::Unit::TestCase
         " imageurl=\"http://example.com/image.png\"" +
         " profileurl=\"http://example.com/profile.xml\"/>\n" +
         "</w:robot>\n")
-    xml = profile_robot.GetCapabilitiesXml()
+    xml = profile_robot.capabilities()
     self.assertStringsEqual(expected, xml)
   end
 
   def testCapsAndEvents()
-    @robot.RegisterHandler('myevent', nil)
-    @robot.RegisterCronJob('/ping', 20)
+    #@robot.RegisterHandler('myevent', nil)
+    @robot.register_cron_job('ping', 20)
     expected = (
         "<?xml version=\"1.0\"?>\n" +
         "<w:robot xmlns:w=\"http://wave.google.com/extensions/robots/1.0\">\n" +
         "<w:capabilities>\n" +
-        "  <w:capability name=\"myevent\"/>\n" +
+     #   "  <w:capability name=\"myevent\"/>\n" +
         "</w:capabilities>\n" +
-        "<w:crons>\n  <w:cron path=\"/ping\" timerinseconds=\"20\"/>\n</w:crons>\n" +
+        "<w:crons>\n  <w:cron path=\"/_wave/robot/ping\" timerinseconds=\"20\"/>\n</w:crons>\n" +
         "<w:profile name=\"Testy\"/>\n" +
         "</w:robot>\n")
-    xml = @robot.GetCapabilitiesXml()
+    xml = @robot.capabilities()
     self.assertStringsEqual(expected, xml)
   end
 end
