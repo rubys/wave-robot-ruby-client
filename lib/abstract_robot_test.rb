@@ -60,7 +60,8 @@ end
 class TestGetCapabilitiesXml < Test::Unit::TestCase
 
   def setup()
-    @robot = AbstractRobot.new('Testy')
+    AbstractRobot.set_name 'Testy'
+    @robot = AbstractRobot.new
   end
 
   def assertStringsEqual(s1, s2)
@@ -68,6 +69,7 @@ class TestGetCapabilitiesXml < Test::Unit::TestCase
   end
 
   def testDefault()
+    AbstractRobot.send('class_variable_set','@@crons',[])
     expected = (
         "<?xml version=\"1.0\"?>\n" +
         "<w:robot xmlns:w=\"http://wave.google.com/extensions/robots/1.0\">\n" +
@@ -79,9 +81,11 @@ class TestGetCapabilitiesXml < Test::Unit::TestCase
   end
 
   def testUrls()
-    profile_robot = AbstractRobot.new(
-        'Testy', image_url='http://example.com/image.png',
-        profile_url='http://example.com/profile.xml')
+    AbstractRobot.set_name 'Testy'
+	AbstractRobot.set_image_url 'http://example.com/image.png'
+    AbstractRobot.set_profile_url 'http://example.com/profile.xml'
+	AbstractRobot.send('class_variable_set','@@crons',[])
+    @robot = AbstractRobot.new
     expected = (
         "<?xml version=\"1.0\"?>\n" +
         "<w:robot xmlns:w=\"http://wave.google.com/extensions/robots/1.0\">\n" +
@@ -90,13 +94,16 @@ class TestGetCapabilitiesXml < Test::Unit::TestCase
         " imageurl=\"http://example.com/image.png\"" +
         " profileurl=\"http://example.com/profile.xml\"/>\n" +
         "</w:robot>\n")
-    xml = profile_robot.capabilities()
+    xml = @robot.capabilities()
     self.assertStringsEqual(expected, xml)
   end
 
   def testCapsAndEvents()
     #@robot.RegisterHandler('myevent', nil)
-    @robot.register_cron_job('ping', 20)
+    AbstractRobot.send('class_variable_set','@@crons',[])
+	AbstractRobot.add_cron 'ping', 20
+	AbstractRobot.set_image_url ''
+    AbstractRobot.set_profile_url ''	
     expected = (
         "<?xml version=\"1.0\"?>\n" +
         "<w:robot xmlns:w=\"http://wave.google.com/extensions/robots/1.0\">\n" +

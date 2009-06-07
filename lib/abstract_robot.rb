@@ -15,51 +15,7 @@ require 'ops'
 require 'rubygems'
 require 'util'
 require 'json'
-
-class RobotListener
-  """Listener interface for robot events.
-
-  The RobotListener is a high-level construct that hides away the details
-  of events. Instead, a client will derive from this class and register
-  it with the robot. All event handlers are automatically registered. When
-  a relevant event comes in, logic is applied based on the incoming data and
-  the appropriate function is invoked.
-
-  For example:
-    If the user implements the 'OnRobotAdded' method, the OnParticipantChanged
-    method of their subclass, this will automatically register the
-    events.WAVELET_PARTICIPANTS_CHANGED handler and respond to any events
-    that add the robot.
-
-    class MyRobotListener < robot.RobotListener
-      def OnRobotAdded()
-        wavelet = self.context.GetRootWavelet()
-        blip = wavelet.CreateBlip()
-        blip.GetDocument.SetText('Thanks for adding me!')
-      end
-    end
-
-    robot = robots.Robot()
-    robot.RegisterListener(MyRobotListener)
-    robot.Run()
-
-  TODO(davidbyttow): Implement this functionality.
-  """
-
-  def initialize
-    pass
-  end
-
-  def OnRobotAdded()
-    # TODO(davidbyttow): Implement.
-    pass
-  end
-
-  def OnRobotRemoved()
-    # TODO(davidbyttow): Implement.
-    pass
-  end
-end
+require 'events'
 
 class AbstractRobot
   """Robot metadata class.
@@ -68,24 +24,22 @@ class AbstractRobot
   It also maintains the list of event handlers and cron jobs and
   dispatches events to the appropriate handlers.
   """
-
-  def initialize(name, image_url='', profile_url='')
-    """Initializes self with robot information."""
-    @_handlers = []
-    @name = name
-    @image_url = image_url
-    @profile_url = profile_url
-    @cron_jobs = []
-	@allowed_commands = []
-  end
+  @@allowed_commands = []
+  @@crons = []
+  @@name = ""
+  @@profile_url = ""
+  @@image_url = ""
   
-  def self.from_yml(filename)
-    conf = YAML.load(File.new('robot.yml'))
-	robot = Robot.new(conf['name'], conf['image_url'], conf['profile_url'])
-	(conf['capabilities'] || {}).each_key {|capability| robot.add_handler capability}
-	(conf['crons'] || {}).each {|path, seconds| robot.register_cron_job(path, seconds)}
-	robot
+
+  def self.set_name(name)
+    @@name = name
   end
+  def self.set_image_url(url)
+    @@image_url = url
+  end
+  def self.set_profile_url(url)
+    @@profile_url = url
+  end  
   
   def execute_json_rpc!(json)
     data = AbstractRobot.parse_json(json)
@@ -95,12 +49,9 @@ class AbstractRobot
 	return context
   end
   
-  def add_handler(capability)
-    @_handlers.push capability
-  end	  
   def run_command(command, json)
-    unless (@allowed_commands + extra_commands).member? command.to_s
-	  return command << " is not one of the allowed commands: " << allowed_commands.to_s
+    unless (@@allowed_commands + @@crons).member? command.to_s
+	  return command << " is not one of the allowed commands: " + @@allowed_commands.to_s
 	end
     data = AbstractRobot.parse_json(json)
 	context = data[0]
@@ -109,41 +60,38 @@ class AbstractRobot
 	return context
   end
   
-
-  def register_cron_job(path, seconds)
-    """Registers a cron job to surface in capabilities.xml."""
-    @cron_jobs.push([path, seconds])
-	@allowed_commands.push(path.gsub("_wave/robot/", ""))
+  def self.add_cron(name, timer)
+    @@crons.push [name, timer]
+  end
+  def self.allow_command(name)
+    @@allowed_commands.push name
   end
 
   def capabilities()
     """Return this robot's capabilities as an XML string."""
     lines = ['<w:capabilities>']
-    @_handlers.each do |capability|
-      lines.push  '  <w:capability name="'<< capability << '"/>'
-    end
+    lines+= events_handled.map{|e| '  <w:capability name="'+e+'"/>'}
     lines.push('</w:capabilities>')
 
-    if @cron_jobs and !@cron_jobs.empty?
+    unless @@crons.empty?
       lines.push('<w:crons>')
-      @cron_jobs.each do |job|
-        lines.push  '  <w:cron path="/_wave/robot/' << job[0] << '" timerinseconds="' << job[1].to_s << '"/>'
-      end
+      lines += @@crons.map{|job| '  <w:cron path="/_wave/robot/' + job[0].to_s + '" timerinseconds="' + job[1].to_s + '"/>'}
       lines.push('</w:crons>')
     end
 
-    robot_attrs = ' name="' << @name <<'"'
-    if @image_url and !@image_url.empty?
-      robot_attrs += ' imageurl="'<< @image_url <<'"'
-    end
-    if @profile_url and !@profile_url.empty?
-      robot_attrs += ' profileurl="' << @profile_url << '"'
-    end
+    robot_attrs = ' name="' + @@name +'"'
+    robot_attrs += ' imageurl="'+ @@image_url +'"' unless @@image_url.empty?
+	robot_attrs += ' profileurl="' + @@profile_url + '"' unless @@profile_url.empty?
     lines.push '<w:profile'<< robot_attrs << '/>'
-		return "<?xml version=\"1.0\"?>\n" <<
-            "<w:robot xmlns:w=\"http://wave.google.com/extensions/robots/1.0\">\n" <<
-			lines.join("\n")	<<		
-            "\n</w:robot>\n"
+	
+	"<?xml version=\"1.0\"?>\n" +
+    "<w:robot xmlns:w=\"http://wave.google.com/extensions/robots/1.0\">\n" +
+	  lines.join("\n") +		
+    "\n</w:robot>\n"
+  end
+  
+  def events_handled
+    ALL_WAVE_EVENTS.select{|e| respond_to?(e)}
   end
 
   def profile()
@@ -153,9 +101,9 @@ class AbstractRobot
       String of JSON to be sent as a response.
     """
     data = {}
-    data['name'] = @name
-    data['imageUrl'] = @image_url
-    data['profileUrl'] = @profile_url
+    data['name'] = @@name
+    data['imageUrl'] = @@image_url
+    data['profileUrl'] = @@profile_url
     # TODO(davidbyttow): Remove this java nonsense.
     data['javaClass'] = 'com.google.wave.api.ParticipantProfile'
     return data.to_json
@@ -172,7 +120,6 @@ class AbstractRobot
 
   def self.serialize_context(context)
     """Return a JSON string representing the given context."""
-    context_dict = Util.Serialize(context)
-    return JSON.dump(context_dict)
+    JSON.dump Util.Serialize(context)
   end  
 end
