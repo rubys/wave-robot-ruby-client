@@ -88,14 +88,26 @@ class AbstractRobot
 	robot
   end
   
+  def execute_json_rpc!(json)
+    data = AbstractRobot.parse_json(json)
+	context = data[0]
+	event = data[1].first
+	send(event.type, event.properties, context)
+	return context
+  end
+  
   def add_handler(capability)
     @_handlers.push capability
   end	  
-  def run_command(command, params = nil)
+  def run_command(command, json)
     unless (@allowed_commands + extra_commands).member? command.to_s
 	  return command << " is not one of the allowed commands: " << allowed_commands.to_s
 	end
-	send(command, params)
+    data = AbstractRobot.parse_json(json)
+	context = data[0]
+	event = data[1].first
+	send(command, events, context)
+	return context
   end
   
 
@@ -103,10 +115,6 @@ class AbstractRobot
     """Registers a cron job to surface in capabilities.xml."""
     @cron_jobs.push([path, seconds])
 	@allowed_commands.push(path.gsub("_wave/robot/", ""))
-  end
-
-  def HandleEvent(event, context)
-    send(event.type, event.properties, context)
   end
 
   def capabilities()
@@ -153,18 +161,17 @@ class AbstractRobot
     data['javaClass'] = 'com.google.wave.api.ParticipantProfile'
     return data.to_json
   end
-  def self.ParseJSONBody(json_body)
+  def self.parse_json(json)
     """Parse a JSON string and return a context and an event list."""
-    json = JSONObject.new(json_body)
     # TODO(davidbyttow): Remove this once no longer needed.
-    data = Util.CollapseJavaCollections(json)
+	data = Util.CollapseJavaCollections(json)
     context = CreateContext(data)
     events = data['events'].map {|event_data| Model.CreateEvent(event_data)}
     return context, events
   end
 
 
-  def self.SerializeContext(context)
+  def self.serialize_context(context)
     """Return a JSON string representing the given context."""
     context_dict = Util.Serialize(context)
     return JSON.dump(context_dict)

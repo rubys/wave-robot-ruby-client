@@ -17,7 +17,7 @@ module Util
 
   def self.IsListOrDict(inst)
     """Returns whether or not this is a list, tuple, set or dict ."""
-    return (inst.respond_to?(:each) and !inst.respond_to?(:each_char))
+    return (inst.respond_to?(:each) and !inst.respond_to?(:each_char) and !inst.is_a?(String))
   end
 
   def self.IsDict(inst)
@@ -62,23 +62,22 @@ module Util
       The same data structure with the collapsed and unnecessary objects
       removed.
     """
-    if IsDict(data)
-      java_class = data.delete('javaClass')
+    if data.is_a? Hash
+      java_class = data['javaClass']
       if java_class == 'java.util.HashMap'
         return CollapseJavaCollections(data['map'])
       elsif java_class == 'java.util.ArrayList'
         return CollapseJavaCollections(data['list'])
       end
+	  h = Hash.new
       data.each_pair do |key, val|
-        data[key] = CollapseJavaCollections(val)
+        h[key] = CollapseJavaCollections(val)
       end
-    elsif IsListOrDict(data)
-      data.length.times.each do |index|
-        data[index] = CollapseJavaCollections(data[index])
-      end
-      return data
+	  return h
+	elsif data.is_a? Array
+      return data.map{|val| CollapseJavaCollections(val)}
     end
-    return data
+	return data
   end
 
   def self.ToLowerCamelCase(s)
@@ -139,7 +138,7 @@ module Util
       next if attr == obj
 
       # Looks okay, serialize it.
-      data[key_writer.call(attr_name)] = Serialize(attr)
+	  data[key_writer.call(attr_name)] = Serialize(attr)
     end
     data['type']=Serialize(obj.type) if obj.respond_to?(:type=)
     if obj.class.constants.include? "JAVA_CLASS"

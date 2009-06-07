@@ -374,7 +374,7 @@ module Model
       """Returns the root wavelet or nil if it is not in this context."""
       for wavelet in @_wavelets.values()
         wavelet_id = wavelet.GetId()
-        if wavelet_id.endswith(ROOT_WAVELET_ID_SUFFIX)
+        if wavelet_id[-ROOT_WAVELET_ID_SUFFIX.length .. -1] == ROOT_WAVELET_ID_SUFFIX
           return wavelet
         end
       end
