@@ -142,7 +142,7 @@ module Util
     end
 	
     for attr_name in obj.instance_variables
-      next if attr_name =~ /^[_A-Z]/ # naming conventions
+      next if attr_name =~ /^@[_A-Z]/ # naming conventions
       next if Object.respond_to?(attr_name)
       attr = obj.instance_variable_get(attr_name)
       next if attr == obj
