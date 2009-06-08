@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#! ruby
 #
 # Copyright 2009 Google Inc. All Rights Reserved.
 
@@ -116,8 +116,4 @@ class TestGetCapabilitiesXml < Test::Unit::TestCase
     xml = @robot.capabilities()
     self.assertStringsEqual(expected, xml)
   end
-end
-
-if __FILE__ == $0
-  unittest.main()
 end
