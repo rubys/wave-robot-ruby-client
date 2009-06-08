@@ -24,8 +24,7 @@ class AbstractRobot
   It also maintains the list of event handlers and cron jobs and
   dispatches events to the appropriate handlers.
   """
-  @@allowed_commands = []
-  @@crons = []
+  @@crons = {}
   @@name = ""
   @@profile_url = ""
   @@image_url = ""
@@ -50,8 +49,8 @@ class AbstractRobot
   end
   
   def run_command(command, json)
-    unless (@@allowed_commands + @@crons).member? command.to_s
-	  return command << " is not one of the allowed commands: " + @@allowed_commands.to_s
+    unless @@crons.keys.member? command
+	  return command.to_s + " is not one of the allowed commands: " + @@crons.keys.join('  ')
 	end
     data = AbstractRobot.parse_json(json)
 	context = data[0]
@@ -61,10 +60,7 @@ class AbstractRobot
   end
   
   def self.add_cron(name, timer)
-    @@crons.push [name, timer]
-  end
-  def self.allow_command(name)
-    @@allowed_commands.push name
+    @@crons[name] = timer
   end
 
   def capabilities()
@@ -75,7 +71,7 @@ class AbstractRobot
 
     unless @@crons.empty?
       lines.push('<w:crons>')
-      lines += @@crons.map{|job| '  <w:cron path="/_wave/robot/' + job[0].to_s + '" timerinseconds="' + job[1].to_s + '"/>'}
+      lines += @@crons.map{|job, timer| '  <w:cron path="/_wave/robot/' + job.to_s + '" timerinseconds="' + timer.to_s + '"/>'}
       lines.push('</w:crons>')
     end
 

@@ -69,7 +69,7 @@ class TestGetCapabilitiesXml < Test::Unit::TestCase
   end
 
   def testDefault()
-    AbstractRobot.send('class_variable_set','@@crons',[])
+    AbstractRobot.send('class_variable_set','@@crons',{})
     expected = (
         "<?xml version=\"1.0\"?>\n" +
         "<w:robot xmlns:w=\"http://wave.google.com/extensions/robots/1.0\">\n" +
@@ -84,7 +84,7 @@ class TestGetCapabilitiesXml < Test::Unit::TestCase
     AbstractRobot.set_name 'Testy'
 	AbstractRobot.set_image_url 'http://example.com/image.png'
     AbstractRobot.set_profile_url 'http://example.com/profile.xml'
-	AbstractRobot.send('class_variable_set','@@crons',[])
+	AbstractRobot.send('class_variable_set','@@crons',{})
     @robot = AbstractRobot.new
     expected = (
         "<?xml version=\"1.0\"?>\n" +
@@ -100,8 +100,8 @@ class TestGetCapabilitiesXml < Test::Unit::TestCase
 
   def testCapsAndEvents()
     #@robot.RegisterHandler('myevent', nil)
-    AbstractRobot.send('class_variable_set','@@crons',[])
-	AbstractRobot.add_cron 'ping', 20
+    AbstractRobot.send('class_variable_set','@@crons',{})
+	AbstractRobot.add_cron :ping, 20
 	AbstractRobot.set_image_url ''
     AbstractRobot.set_profile_url ''	
     expected = (
