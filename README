@@ -5,8 +5,6 @@ Status:
 
 * Unit tests pass.
 
-* samples and robot.rb not yet ported from Python to Ruby.
-
 * Instructions for use with Sinatra + JRuby + AppEngine:
   http://blog.inigral.com/2009/06/07/a-google-wave-robot-container-in-sinatra/
 
